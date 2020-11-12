@@ -5,3 +5,4 @@ metals.sbt
 target
 .bloop
 .vscode
+.metals
