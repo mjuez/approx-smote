@@ -1,0 +1,249 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.spark.ml.instance
+
+import scala.util.Random
+import org.apache.spark.annotation.Since
+import org.apache.spark.ml.Transformer
+import org.apache.spark.ml.param.{Params, IntParam, BooleanParam, ParamValidators, ParamMap}
+import org.apache.spark.ml.param.shared.{HasLabelCol, HasFeaturesCol, HasSeed}
+import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable, MetadataUtils}
+import org.apache.spark.ml.feature.{MinMaxScaler, MinMaxScalerModel}
+import org.apache.spark.ml.linalg.{Vector, Vectors}
+import org.apache.spark.ml.knn.KNN
+import org.apache.spark.sql.{Dataset, DataFrame, Row}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.StructType
+
+/**
+  * Approximated SMOTE algorithm.
+  * An SMOTE algorithm that uses Saurfang's approximated 
+  * KNN algorithm for efficient neighbour search.
+  * 
+  * @author Mario Juez-Gil <mariojg@ubu.es>
+  * @param uid
+  */
+@Since("2.4.5")
+class ASMOTE @Since("2.4.5") (
+    @Since("2.4.5") override val uid: String) 
+  extends Transformer with ASMOTEParams with HasLabelCol
+  with HasFeaturesCol with HasSeed with DefaultParamsWritable {
+
+  @Since("2.4.5")
+  def this() = this(Identifiable.randomUID("asmote"))
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setK(value: Int): this.type = set(k, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setPercOver(value: Int): this.type = set(percOver, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setTopTreeSize(value: Int): this.type = set(topTreeSize, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setSeed(value: Long): this.type = set(seed, value)
+
+  /**
+    * Transforms the dataset into an oversampled one.
+    *
+    * @param ds dataset.
+    * 
+    * @return an oversampled DataFrame.
+    */
+  override def transform(ds: Dataset[_]): DataFrame = {
+    val categoricalFeatures: Map[Int, Int] =
+      MetadataUtils.getCategoricalFeatures(ds.schema($(featuresCol)))
+
+    require(categoricalFeatures.isEmpty, "ASMOTE requires all features to be numeric.")
+    
+    val session = ds.sparkSession
+    val rnd = new Random($(seed))
+    val (minorityLabel, minoritySize) = ds
+      .groupBy($(labelCol))
+      .count
+      .sort(asc("count"))
+      .collect
+      .map(r => (r.getAs[Double](0), r.getAs[Long](1)))
+      .apply(0)
+
+    val minorityDS = ds.filter(col($(labelCol)) === minorityLabel)
+
+    val scalerModel = new MinMaxScaler()
+      .setInputCol($(featuresCol))
+      .setOutputCol("fs")
+      .setMin(0).setMax(1)
+      .fit(minorityDS)
+
+    val normMinorityDF = scalerModel
+      .transform(minorityDS)
+      .drop($(featuresCol))
+      .withColumnRenamed("fs", $(featuresCol))
+      .cache
+      .toDF
+
+    minorityDS.unpersist
+
+    val frac = $(percOver).toFloat / 100.0
+    val creationFactor = frac.ceil.toInt
+
+    val tts = if($(topTreeSize) > 0) $(topTreeSize) else (normMinorityDF.count.toInt/500)
+
+    val knnDF = new KNN()
+      .setTopTreeSize(tts)
+      .setK($(k))
+      .setAuxCols(Array($(featuresCol)))
+      .fit(normMinorityDF)
+      .transform(normMinorityDF)
+
+    normMinorityDF.unpersist
+
+    val synthSamples = knnDF.rdd.flatMap {
+      case Row(label: Double, currentF: Vector, neighborsIter: Iterable[_]) =>
+      val neighbors = neighborsIter.asInstanceOf[Iterable[Row]].toList
+      (0 to (creationFactor - 1)).map{ case(_) =>
+        val randomIndex = rnd.nextInt(neighbors.size)
+        val neighbour = neighbors(randomIndex).get(0).asInstanceOf[Vector].asBreeze
+        val currentFBreeze = currentF.asBreeze
+        val difference = (neighbour - currentFBreeze) * rnd.nextDouble
+        val synthSample = Vectors.fromBreeze(currentFBreeze + difference)
+        Row.fromSeq(Seq(label, synthSample))
+      }
+    }.cache
+
+    val sampleFrac = frac / creationFactor
+    val synthSamplesDF = session
+      .createDataFrame(synthSamples, ds.select($(labelCol), $(featuresCol)).schema)
+      .sample(false, sampleFrac, rnd.nextLong)
+    ds.select($(labelCol), $(featuresCol)).toDF.union(denormalize(synthSamplesDF, scalerModel))
+  }
+
+  /**
+   * The schema of the output Dataset is the same as the input one.
+   * 
+   * @param schema Input schema.
+   */
+  @Since("2.4.5")
+  override def transformSchema(schema: StructType): StructType = schema
+
+  /**
+   * Creates a copy of this instance.
+   * 
+   * @param extra  Param values which will overwrite Params in the copy.
+   */
+  @Since("2.4.5")
+  override def copy(extra: ParamMap): Transformer = defaultCopy(extra)
+
+  /**
+   * De-normalize the dataset previously normalized by a MinMaxScaler.
+   * 
+   * @author Álvar Arnaiz-González <alvarag@ubu.es>
+   * @param df DataFrame to de-normalize.
+   * @param scaler MinMaxScaler model used previously to normalize.
+   * 
+   * @return De-normalized dataframe.
+   */
+  @Since("2.4.5")
+  private def denormalize(df: DataFrame, scaler: MinMaxScalerModel): DataFrame = {
+
+    val numFeatures = scaler.originalMax.size
+    val scale = 1
+
+    // transformed value for constant cols
+    val minArray = scaler.originalMin.toArray
+
+    val scaleArray = Array.tabulate(numFeatures) { 
+      i => val range = scaler.originalMax(i) - scaler.originalMin(i)
+      // scaleArray(i) == 0 iff i-th col is constant (range == 0)
+      if (range != 0) range else 0.0
+    }
+
+    val transformer = udf { vector: Vector =>
+      // 0 in sparse vector will probably be rescaled to non-zero
+      val values = vector.toArray
+      var i = 0
+      while (i < numFeatures) {
+        if (!values(i).isNaN) {
+          if (scaleArray(i) != 0) {
+            values(i) = values(i) * scaleArray(i) + minArray(i)
+          }
+          else {
+            // scaleArray(i) == 0 means i-th col is constant
+            values(i) = scaler.originalMin(i)
+          }
+        }
+        i += 1
+      }
+      Vectors.dense(values).compressed
+    }
+
+    // Denormalize the features column and overwrite it.
+    df.withColumn($(featuresCol), transformer(col($(featuresCol))))
+  }
+  
+
+}
+
+/**
+  * Parameters of Approximated SMOTE algorithm.
+  * - k: Number of nearest neighbours (for KNN algorithm).
+  * - percOver: The oversampling percentaje 
+  *   (100% means duplicate the number of instances).
+  * - topTreeSize: Number of points to sample for top-level
+  *   tree (for KNN algorithm).
+  * 
+  * @author Mario Juez-Gil <mariojg@ubu.es>
+  */
+@Since("2.4.5")
+trait ASMOTEParams extends Params {
+
+  /** @group param */
+  @Since("2.4.5")
+  final val k: IntParam = new IntParam(this, "k", 
+    "Number of nearest neighbours, preferably an odd number.",
+    ParamValidators.gtEq(3))
+
+  /** @group param */
+  @Since("2.4.5")
+  final val percOver: IntParam = new IntParam(this, "percOver", 
+    "Oversampling percentage.", ParamValidators.gtEq(1))
+
+  /** @group param */
+  @Since("2.4.5")
+  final val topTreeSize = new IntParam(this, "topTreeSize", 
+    "Number of points to sample for top-level tree (KNN)", 
+    ParamValidators.gtEq(0))
+
+  setDefault(k -> 5, percOver -> 100, topTreeSize -> 0)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getK: Int = $(k)
+  
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getPercOver: Int = $(percOver)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getTopTreeSize: Int = $(topTreeSize)
+}
