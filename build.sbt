@@ -1,5 +1,5 @@
-name          := "ASMOTE-BD"
-version       := "0.4.2"
+name          := "approx-smote"
+version       := "0.1.0"
 organization  := "ubu.admirable"
 licenses      := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
 
@@ -8,7 +8,7 @@ scalaVersion  := "2.11.12"
 credentials   += Credentials(Path.userHome / ".ivy2" / ".sbtcredentials")
 
 //sbt-spark-package
-spName          := "mjuez/ASMOTE-BD"
+spName          := "mjuez/approx-smote"
 sparkVersion    := "2.4.5"
 
 sparkComponents += "mllib"
