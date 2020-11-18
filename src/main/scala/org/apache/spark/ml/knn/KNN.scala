@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 package org.apache.spark.ml.knn
 
 import breeze.linalg.{DenseVector, Vector => BV}
@@ -40,6 +40,13 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.util.hashing.byteswap64
 
+
+/**
+  * This code has been extracted from Saurfang's spark-knn library
+  * available on: https://github.com/saurfang/spark-knn
+  * 
+  * @author saurfang <https://github.com/saurfang>
+  */
 // features column => vector, input columns => auxiliary columns to return by KNN model
 private[ml] trait KNNModelParams extends Params with HasFeaturesCol with HasInputCols {
   /**
