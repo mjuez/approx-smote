@@ -12,7 +12,6 @@ spName          := "mjuez/approx-smote"
 sparkVersion    := "2.4.5"
 
 sparkComponents += "mllib"
-spDependencies  += "saurfang/spark-knn:0.3.0"
 
 //include provided dependencies in sbt run task
 run in Compile := Defaults.runTask(fullClasspath in Compile, mainClass in(Compile, run), runner in(Compile, run))
