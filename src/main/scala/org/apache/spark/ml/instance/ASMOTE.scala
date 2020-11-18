@@ -106,7 +106,7 @@ class ASMOTE @Since("2.4.5") (
     val frac = $(percOver).toFloat / 100.0
     val creationFactor = frac.ceil.toInt
 
-    val tts = if($(topTreeSize) > 0) $(topTreeSize) else (normMinorityDF.count.toInt/500)
+    val tts = if($(topTreeSize) > 0) $(topTreeSize) else ((normMinorityDF.count/500.0).ceil.toInt)
 
     val knnDF = new KNN()
       .setTopTreeSize(tts)
