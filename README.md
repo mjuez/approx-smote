@@ -85,7 +85,7 @@ val newDF = asmote.transform(ds) // oversampled DataFrame
 
 The following figure shows an example of how Approx-SMOTE resamples a bivariate synthetic dataset consisting of 7,000 instances: 6,000 belongs to the majority class and 1,000 to the minority class:
 
-<img src="https://github.com/mjuez/assets/blob/main/approx-smote/smote-levels.jpg" width="100%">
+<img src="https://github.com/mjuez/assets/blob/main/approx-smote/smote_levels.jpg" width="100%">
 
 ## Experiments
 
@@ -114,13 +114,13 @@ Approx-SMOTE demonstrated to be between 7.52 (on the smallest cluster) and 28.15
 The following table shows the execution time results (times are measured in seconds):
 
 | Approach | 2 w | 4 w | 6 w | 8 w | 10 w |
-| -------- | --- | --- | --- | --- | ---- |
+| -------- | --: | --: | --: | --: | ---: |
 | SMOTE-BD | 1321.39 | 2218.60 | 2103.68 | 1587.29 | 2172.05 |
 | Approx-SMOTE | 175.70 | 123.70 | 113.89 | 91.30 | 77.15 |
 
 The following figure shows a graphical representation of the execution time comparative results (left plot) and the speedup comparative results (right plot):
 
-<img src="https://github.com/mjuez/assets/blob/main/approx-smote/scalability_experiments.jpg" width="90%">
+<img src="https://github.com/mjuez/assets/blob/main/approx-smote/scalability_experiments.jpg" width="100%">
 
 ### Classification performance
 
