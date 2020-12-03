@@ -12,10 +12,12 @@ Approx-SMOTE was implemented in **Scala 2.11** for **Apache Spark 2.4.5**.
 - Álvar Arnaiz-González
 - Juan J. Rodríguez
 - César García-Osorio
+- Carlos López-Nozal
 
 **Affiliation:**\
 Departamento de Ingeniería Informática\
-Universidad de Burgos
+Universidad de Burgos\
+[ADMIRABLE Research Group](http://admirable-ubu.es/)
 
 ## Installation
 
@@ -141,7 +143,7 @@ Feel free to submit any pull requests 😊
 ## Acknowlegments
 
 The project leading to these results has received funding from "la Caixa" Foundation, under agreement LCF/PR/PR18/51130007.
-This work was supported through project BU055P20 (JCyL/FEDER, UE) of the *Junta de Castilla y León* (co-financed through European Union FEDER funds). It also was supported through *Consejería de Educación of the *Junta de Castilla y León* and the European Social Fund through a pre-doctoral grant (EDU/1100/2017).
+This work was supported through project BU055P20 (JCyL/FEDER, UE) of the *Junta de Castilla y León* (co-financed through European Union FEDER funds). It also was supported through *Consejería de Educación* of the *Junta de Castilla y León* and the European Social Fund through a pre-doctoral grant (EDU/1100/2017).
 This material is based upon work supported by Google Cloud.
 
 ## License
