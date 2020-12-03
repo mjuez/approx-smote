@@ -11,8 +11,8 @@ Approx-SMOTE was implemented in **Scala 2.11** for **Apache Spark 2.4.5**.
 - Mario Juez-Gil <<mariojg@ubu.es>>
 - Álvar Arnaiz-González
 - Juan J. Rodríguez
-- César García-Osorio
 - Carlos López-Nozal
+- César García-Osorio
 
 **Affiliation:**\
 Departamento de Ingeniería Informática\
