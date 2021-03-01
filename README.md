@@ -1,4 +1,4 @@
-# Approximated SMOTE for Big Data under Apache Spark framework
+# Approx-SMOTE: fast SMOTE for Big Data on Apache Spark
 
 This repository contains an approximated SMOTE (Approx-SMOTE) implementation for Apache Spark framework. It uses [saurfang's spark-knn](https://github.com/saurfang/spark-knn) for efficient aproximated neighbors search. This approach outperformed other existing SMOTE-based approaches for Apache Spark maintaining their advantages for some classification tasks.
 
