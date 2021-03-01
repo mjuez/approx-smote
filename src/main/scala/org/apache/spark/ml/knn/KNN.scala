@@ -505,9 +505,9 @@ object KNN {
     val y = DenseVector(estimators.map { case (_, d) => math.log(d) })
 
     // estimate log(R_s) = alpha + beta * log(N_s)
-    val xMeanVariance: MeanAndVariance = meanAndVariance(x)
+    val xMeanVariance: meanAndVariance.MeanAndVariance = meanAndVariance(x)
     val xmean = xMeanVariance.mean
-    val yMeanVariance: MeanAndVariance = meanAndVariance(y)
+    val yMeanVariance: meanAndVariance.MeanAndVariance = meanAndVariance(y)
     val ymean = yMeanVariance.mean
 
     val corr = (mean(x *:* y) - xmean * ymean) / math.sqrt((mean(x *:* x) - xmean * xmean) * (mean(y *:* y) - ymean * ymean))
