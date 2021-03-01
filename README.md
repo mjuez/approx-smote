@@ -4,7 +4,7 @@ This repository contains an approximated SMOTE (Approx-SMOTE) implementation for
 
 SMOTE, or synthetic minority oversampling technique, creates synthetic instances belonging to the minority class of binary imbalanced classification problems. This could help overcoming biased classification issues provoked by the imbalance present in some datasets.
 
-Approx-SMOTE was implemented in **Scala 2.11** for **Apache Spark 2.4.5**.
+Approx-SMOTE was implemented in **Scala 2.12** for **Apache Spark 3.0.1**.
 
 ## Authors
 
@@ -27,13 +27,13 @@ It can be installed as follows:
 
 - **spark-shell**, **pyspark**, or **spark-submit**:
 ```bash
-> $SPARK_HOME/bin/spark-shell --packages mjuez:approx-smote:1.0.0
+> $SPARK_HOME/bin/spark-shell --packages mjuez:approx-smote:1.1.0
 ```
 - **sbt**:
 ```scala
 resolvers += "Spark Packages Repo" at "http://dl.bintray.com/spark-packages/maven"
 
-libraryDependencies += "mjuez" % "approx-smote" % "1.0.0"
+libraryDependencies += "mjuez" % "approx-smote" % "1.1.0"
 ```
 - **Maven**:
 ```xml
@@ -42,7 +42,7 @@ libraryDependencies += "mjuez" % "approx-smote" % "1.0.0"
   <dependency>
     <groupId>mjuez</groupId>
     <artifactId>approx-smote</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
   </dependency>
 </dependencies>
 <repositories>
@@ -60,9 +60,15 @@ Approx-SMOTE is a Spark [Transformer](https://spark.apache.org/docs/latest/ml-pi
 
 Following the Spark MLlib API, the configuration of Approx-SMOTE is done through [Parameters](https://spark.apache.org/docs/latest/ml-pipeline.html#parameters). The following parameters could be set:
 
-- `k`: The number of nearest neighbors to find (default: 5).
 - `percOver`: Oversampling percentage. The number of synthetic instances to be created, as a percentage of the number of instances belonging to the minority class (default: 100, i.e., the number of minority samples is doubled).
-- `topTreeSize`: Number of instances used at the top level of hybrid spill trees used by saurfang's approximated *k*-NN (default: `num_minority_examples/500`)
+- `k`: The number of nearest neighbors to find (default: 5).
+- `maxDistance`: Maximum distance to find neighbors,used by saurfang's approximated *k*-NN (default: +∞).
+- `bufferSize`: Size of buffer used to construct spill trees and top-level tree search, used by saurfang's approximated *k*-NN (default: -1.0, which means automatic effective nearest neighbor distance estimation).
+- `topTreeSize`: Number of instances used at the top level of hybrid spill trees, used by saurfang's approximated *k*-NN (default: `num_minority_examples/500`)
+- `topTreeLeafSize`: Number of points at which to switch to brute-force for top-level tree, used by saurfang's approximated *k*-NN (default: 5)
+- `subTreeLeafSize`: Number of points at which to switch to brute-force for distributed sub-trees, used by saurfang's approximated *k*-NN (default: 20)
+- `bufferSizeSampleSizes`: Number of sample sizes to take when estimating buffer size, used by saurfang's approximated *k*-NN (default: 100 to 1000 by 100)
+- `balanceThreshold`: Fraction of total points at which spill tree reverts back to metric tree if either child contains more points, used by saurfang's approximated *k*-NN (default: 70%)
 - `seed`: A random seed for experiments repeatability.
 - `labelCol`: The name of the column containing instance label (default: `label`).
 - `featuresCol`: The name of the column containing instance features (default: `features`).
@@ -100,9 +106,17 @@ Each worker node had 2 vCPU a 7.5 GB memory.
 Thus, the biggest cluster configuration (1 master and 10 workers) had 28 vCPUs and 127 GB memory.
 For comparing execution times all cluster configurations have been used.
 The classification performance comparison was executed on the biggest one, using 2-fold stratified cross validation repeated 5 times.
-[SUSY dataset](https://archive.ics.uci.edu/ml/datasets/SUSY) with an imbalance ratio of 16 was used ([download imbalanced dataset](https://github.com/mjuez/approx-smote/releases/download/0.1.2/susy_ir16_nonorm.libsvm)).
-This dataset consists on 2,881,796 instances, 2,712,173 belonging to the majority class and 169,623 to the minority class.
-Its size stored as LibSVM format is 1.04 GB.
+Six imbalanced datasets were used for assessing the classification performance:
+
+| Dataset | # Instances | # Attributes | # maj/min | IR | Size (GB) |
+| -------- | --: | --: | --: | --: | ---: |
+SUSY IR4 | 3,389,320 | 18 | 2,712,173/677,147 | 4.00 | 1.23 |
+SUSY IR16     | 2,881,796 | 18 | 2,712,173/169,623   | 15.99  | 1.04 |
+HIGGS IR4     | 7,284,166 | 28 | 5,829,123/1,455,043  | 4.00   | 3.94 |
+HIGGS IR16    | 6,194,093 | 28 | 5,829,123/364,970   | 15.97  | 3.26 |
+HEPMASS IR4   | 6,561,364 | 28 | 5,250,124/1,311,240  | 4.00   | 3.77 |
+HEPMASS IR16  | 5,578,586 | 28 | 5,250,124/328,462   | 15.98  | 3.20 |
+
 For ensuring experiments to be repeatable, a random seed was fixed to **46**.
 The experiments consisted in reducing the imbalance ratio to **1** (i.e., balancing the dataset). 
 The number of neighbors (i.e., *k*) was fixed to **5**. 
@@ -128,13 +142,13 @@ The following figure shows a graphical representation of the execution time comp
 
 For this experiments, a Spark ML Random Forest of 100 trees with default parameters was used. The models were trained using the imbalanced dataset as it is, the oversampled dataset through SMOTE-BD, and the oversampled dataset through Approx-SMOTE. Classification performance showed to be nearly the same for both SMOTE approaches.
 
-The following table shows the classification performance in terms of AUC, Geometric Mean, and F1 Score:
+The following table shows the classification performance in terms of AUC, and F1 Score. The best results appear within black boxes. The higher the blueness intensity, the better the performance. The value at the right of the ± sign, refers to the standard deviation between cross-validation folds.:
 
-| Approach | AUC | Geometric Mean | F1 Score |
-| -------- | --- | -------------- | -------- |
-| Do Nothing | 0.6223 (&plusmn; 0.0089) | 0.4970 (&plusmn; 0.0190) | **0.3797** (&plusmn; 0.0184) |
-| SMOTE-BD | 0.7708 (&plusmn; 0.0007) | 0.7706 (&plusmn; 0.0007) | 0.2934 (&plusmn; 0.0028) |
-| Approx-SMOTE | **0.7720** (&plusmn; 0.0010) | **0.7715** (&plusmn; 0.0009) | 0.2998 (&plusmn; 0.0040) |
+<img src="https://github.com/mjuez/assets/blob/main/approx-smote/classification_results_table.jpg" width="100%">
+
+The following figure shows the Bayesian Hierarchical sign tests demonstrating the equivalence between SMOTE-BD and Approx-SMOTE.
+
+<img src="https://github.com/mjuez/assets/blob/main/approx-smote/bayesian_tests.jpg" width="100%">
 
 ## Contribute
 
