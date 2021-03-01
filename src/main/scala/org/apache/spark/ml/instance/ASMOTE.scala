@@ -29,6 +29,8 @@ import org.apache.spark.ml.knn.KNN
 import org.apache.spark.sql.{Dataset, DataFrame, Row}
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.ml.param.DoubleParam
+import org.apache.spark.ml.param.IntArrayParam
 
 /**
   * Approximated SMOTE algorithm.
@@ -57,7 +59,31 @@ class ASMOTE @Since("2.4.5") (
 
   /** @group setParam */
   @Since("2.4.5")
+  def setMaxDistance(value: Double): this.type = set(maxDistance, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setBufferSize(value: Double): this.type = set(bufferSize, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
   def setTopTreeSize(value: Int): this.type = set(topTreeSize, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setTopTreeLeafSize(value: Int): this.type = set(topTreeLeafSize, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setSubTreeLeafSize(value: Int): this.type = set(subTreeLeafSize, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setBufferSizeSampleSizes(value: Array[Int]): this.type = set(bufferSizeSampleSizes, value)
+
+  /** @group setParam */
+  @Since("2.4.5")
+  def setBalanceThreshold(value: Double): this.type = set(balanceThreshold, value)
 
   /** @group setParam */
   @Since("2.4.5")
@@ -109,9 +135,16 @@ class ASMOTE @Since("2.4.5") (
     val tts = if($(topTreeSize) > 0) $(topTreeSize) else ((normMinorityDF.count/500.0).ceil.toInt)
 
     val knnDF = new KNN()
-      .setTopTreeSize(tts)
       .setK($(k))
+      .setMaxDistance($(maxDistance))
+      .setBufferSize($(bufferSize))
+      .setTopTreeSize(tts)
+      .setTopTreeLeafSize($(topTreeLeafSize))
+      .setSubTreeLeafSize($(subTreeLeafSize))
+      .setBufferSizeSampleSizes($(bufferSizeSampleSizes))
+      .setBalanceThreshold($(balanceThreshold))
       .setAuxCols(Array($(featuresCol)))
+      .setSeed(rnd.nextLong)
       .fit(normMinorityDF)
       .transform(normMinorityDF)
 
@@ -229,11 +262,43 @@ trait ASMOTEParams extends Params {
 
   /** @group param */
   @Since("2.4.5")
+  final val maxDistance = new DoubleParam(this, "maxNeighbors", "maximum distance to find neighbors", // todo: maxDistance or maxNeighbors?
+                                     ParamValidators.gt(0))
+
+  /** @group param */
+  @Since("2.4.5")
+  final val bufferSize = new DoubleParam(this, "bufferSize",
+    "size of buffer used to construct spill trees and top-level tree search", ParamValidators.gtEq(-1.0))
+
+  /** @group param */
+  @Since("2.4.5")
   final val topTreeSize = new IntParam(this, "topTreeSize", 
     "Number of points to sample for top-level tree (KNN)", 
     ParamValidators.gtEq(0))
 
-  setDefault(k -> 5, percOver -> 100, topTreeSize -> 0)
+  /** @group param */
+  @Since("2.4.5")
+  final val topTreeLeafSize = new IntParam(this, "topTreeLeafSize",
+    "number of points at which to switch to brute-force for top-level tree", ParamValidators.gt(0))
+
+  /** @group param */
+  @Since("2.4.5")
+  final val subTreeLeafSize = new IntParam(this, "subTreeLeafSize",
+    "number of points at which to switch to brute-force for distributed sub-trees", ParamValidators.gt(0))
+
+  /** @group param */
+  @Since("2.4.5")
+  final val bufferSizeSampleSizes = new IntArrayParam(this, "bufferSizeSampleSize",  // todo: should this have an 's' at the end?
+    "number of sample sizes to take when estimating buffer size", { arr: Array[Int] => arr.length > 1 && arr.forall(_ > 0) })
+
+  /** @group param */
+  @Since("2.4.5")
+  final val balanceThreshold = new DoubleParam(this, "balanceThreshold",
+    "fraction of total points at which spill tree reverts back to metric tree if either child contains more points",
+    ParamValidators.inRange(0, 1))
+
+  setDefault(k -> 5, percOver -> 100, topTreeSize -> 1000, topTreeLeafSize -> 10, subTreeLeafSize -> 30,
+    bufferSize -> -1.0, bufferSizeSampleSizes -> (100 to 1000 by 100).toArray, balanceThreshold -> 0.7, maxDistance -> Double.PositiveInfinity)
 
   /** @group getParam */
   @Since("2.4.5")
@@ -245,5 +310,29 @@ trait ASMOTEParams extends Params {
 
   /** @group getParam */
   @Since("2.4.5")
+  final def getMaxDistance: Double = $(maxDistance)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getBufferSize: Double = $(bufferSize)
+
+  /** @group getParam */
+  @Since("2.4.5")
   final def getTopTreeSize: Int = $(topTreeSize)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getTopTreeLeafSize: Int = $(topTreeLeafSize)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getSubTreeLeafSize: Int = $(subTreeLeafSize)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getBufferSizeSampleSizes: Array[Int] = $(bufferSizeSampleSizes)
+
+  /** @group getParam */
+  @Since("2.4.5")
+  final def getBalanceThreshold: Double = $(balanceThreshold)
 }

@@ -372,6 +372,12 @@ class KNN(override val uid: String) extends Estimator[KNNModel] with KNNParams {
   def setK(value: Int): this.type = set(k, value)
 
   /** @group setParam */
+  def setMaxDistance(value: Double): this.type = set(maxDistance, value)
+
+  /** @group setParam */
+  def setBufferSize(value: Double): this.type = set(bufferSize, value)
+
+  /** @group setParam */
   def setAuxCols(value: Array[String]): this.type = set(inputCols, value)
 
   /** @group setParam */
