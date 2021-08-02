@@ -110,18 +110,20 @@ Six imbalanced datasets were used for assessing the classification performance:
 
 | Dataset | # Instances | # Attributes | # maj/min | IR | Size (GB) |
 | -------- | --: | --: | --: | --: | ---: |
-SUSY IR4 | 3,389,320 | 18 | 2,712,173/677,147 | 4.00 | 1.23 |
-SUSY IR16     | 2,881,796 | 18 | 2,712,173/169,623   | 15.99  | 1.04 |
-HIGGS IR4     | 7,284,166 | 28 | 5,829,123/1,455,043  | 4.00   | 3.94 |
-HIGGS IR16    | 6,194,093 | 28 | 5,829,123/364,970   | 15.97  | 3.26 |
-HEPMASS IR4   | 6,561,364 | 28 | 5,250,124/1,311,240  | 4.00   | 3.77 |
-HEPMASS IR16  | 5,578,586 | 28 | 5,250,124/328,462   | 15.98  | 3.20 |
+[SUSY IR4](https://github.com/mjuez/approx-smote/releases/download/1.1.0/susy_ir4_nonorm.zip) | 3,389,320 | 18 | 2,712,173/677,147 | 4.00 | 1.23 |
+[SUSY IR16](https://github.com/mjuez/approx-smote/releases/download/1.1.0/susy_ir16_nonorm.zip)     | 2,881,796 | 18 | 2,712,173/169,623   | 15.99  | 1.04 |
+[HIGGS IR4](https://github.com/mjuez/approx-smote/releases/download/1.1.0/higgs_ir4_nonorm.zip)     | 7,284,166 | 28 | 5,829,123/1,455,043  | 4.00   | 3.94 |
+[HIGGS IR16](https://github.com/mjuez/approx-smote/releases/download/1.1.0/higgs_ir16_nonorm.zip)    | 6,194,093 | 28 | 5,829,123/364,970   | 15.97  | 3.26 |
+[HEPMASS IR4](https://github.com/mjuez/approx-smote/releases/download/1.1.0/hepmass_ir4_nonorm.zip)   | 6,561,364 | 28 | 5,250,124/1,311,240  | 4.00   | 3.77 |
+[HEPMASS IR16](https://github.com/mjuez/approx-smote/releases/download/1.1.0/hepmass_ir16_nonorm.zip)  | 5,578,586 | 28 | 5,250,124/328,462   | 15.98  | 3.20 |
 
 For ensuring experiments to be repeatable, a random seed was fixed to **46**.
 The experiments consisted in reducing the imbalance ratio to **1** (i.e., balancing the dataset). 
 The number of neighbors (i.e., *k*) was fixed to **5**. 
 The number of partitions for SMOTE-BD was set to **8** as their authors recommended in the [original publication](https://journal.info.unlp.edu.ar/JCST/article/view/1122). 
-The rest of the params were the default ones.
+The rest of the parameters were the default ones.
+
+The experiment scripts are available in the [experiments folder](experiments). The file [gcloud_scripts.sh](experiments/gcloud_scripts.sh) contains the commands used for launching the differents experiments in Google Cloud. The file [experimenter.scala](experiments/experimenter.scala) contains the `ClassificationExperimentLauncher` class, which performs the cross validation, instantiates Approx-SMOTE, and trains Random Forests.
 
 ### Execution times and Speedup
 
