@@ -168,5 +168,20 @@ This work is licensed under [Apache-2.0](LICENSE).
 
 ## Citation policy
 
-This work is currently under review process, and citation policy will be available after its publication.
+Please, cite this research as:
+
+```
+@article{juez2021approx,
+title = {Approx-SMOTE: fast SMOTE for Big Data on Apache Spark},
+journal = {Neurocomputing},
+year = {2021},
+issn = {0925-2312},
+doi = {https://doi.org/10.1016/j.neucom.2021.08.086},
+url = {https://www.sciencedirect.com/science/article/pii/S0925231221012832},
+author = {Mario Juez-Gil and \'{A}lvar Arnaiz-Gonz\'alez and Juan J. Rodr\'iguez and Carlos L\'opez-Nozal and C\'esar Garc\'ia-Osorio}
+keywords = {SMOTE, imbalance, Spark, big data, data mining},
+abstract = {One of the main goals of Big Data research, is to find new data mining methods that are able to process large amounts of data in acceptable times. In Big Data classification, as in traditional classification, class imbalance is a common problem that must be addressed, in the case of Big Data also looking for a solution that can be applied in an acceptable execution time. In this paper we present Approx-SMOTE, a parallel implementation of the SMOTE algorithm for the Apache Spark framework. The key difference with the original SMOTE, besides parallelism, is that it uses an approximate version of k-Nearest Neighbor which makes it highly scalable. Although an implementation of SMOTE for Big Data already exists (SMOTE-BD), it uses an exact Nearest Neighbor search, which does not make it entirely scalable. Approx-SMOTE on the other hand is able to achieve up to 30 times faster run times without sacrificing the improved classification performance offered by the original SMOTE.}
+}
+```
+
 
