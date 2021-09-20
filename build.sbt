@@ -1,17 +1,16 @@
-name          := "approx-smote"
-version       := "1.1.0"
-organization  := "ubu.admirable"
-licenses      := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html"))
+val sparkVersion = "3.1.1"
 
-scalaVersion  := "2.12.10"
-
-credentials   += Credentials(Path.userHome / ".ivy2" / ".sbtcredentials")
-
-//sbt-spark-package
-spName          := "mjuez/approx-smote"
-sparkVersion    := "3.0.1"
-
-sparkComponents += "mllib"
-
-//include provided dependencies in sbt run task
-run in Compile := Defaults.runTask(fullClasspath in Compile, mainClass in(Compile, run), runner in(Compile, run))
+lazy val root = project
+    .withId("approx-smote")
+    .in(file("."))
+    .settings(
+        name          := "approx-smote",
+        organization  := "ubu.admirable",
+        scalaVersion  := "2.12.10",
+        version       := "1.1.1",
+        licenses      := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.html")),
+        resolvers     += "Spark Packages Repo" at "https://repos.spark-packages.org",
+        libraryDependencies ++= Seq(
+            "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided"
+        )
+    )
