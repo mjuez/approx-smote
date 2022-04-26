@@ -262,7 +262,7 @@ trait ASMOTEParams extends Params {
 
   /** @group param */
   @Since("2.4.5")
-  final val maxDistance = new DoubleParam(this, "maxNeighbors", "maximum distance to find neighbors", // todo: maxDistance or maxNeighbors?
+  final val maxDistance = new DoubleParam(this, "maxDistance", "maximum distance to find neighbors",
                                      ParamValidators.gt(0))
 
   /** @group param */
@@ -288,7 +288,7 @@ trait ASMOTEParams extends Params {
 
   /** @group param */
   @Since("2.4.5")
-  final val bufferSizeSampleSizes = new IntArrayParam(this, "bufferSizeSampleSize",  // todo: should this have an 's' at the end?
+  final val bufferSizeSampleSizes = new IntArrayParam(this, "bufferSizeSampleSizes", 
     "number of sample sizes to take when estimating buffer size", { arr: Array[Int] => arr.length > 1 && arr.forall(_ > 0) })
 
   /** @group param */
