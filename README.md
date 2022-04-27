@@ -27,13 +27,13 @@ It can be installed as follows:
 
 - **spark-shell**, **pyspark**, or **spark-submit**:
 ```bash
-> $SPARK_HOME/bin/spark-shell --packages mjuez:approx-smote:1.1.0
+> $SPARK_HOME/bin/spark-shell --packages mjuez:approx-smote:1.1.2
 ```
 - **sbt**:
 ```scala
-resolvers += "Spark Packages Repo" at "http://dl.bintray.com/spark-packages/maven"
+resolvers += "Spark Packages Repo" at "https://repos.spark-packages.org",
 
-libraryDependencies += "mjuez" % "approx-smote" % "1.1.0"
+libraryDependencies += "mjuez" % "approx-smote" % "1.1.2"
 ```
 - **Maven**:
 ```xml
@@ -42,14 +42,14 @@ libraryDependencies += "mjuez" % "approx-smote" % "1.1.0"
   <dependency>
     <groupId>mjuez</groupId>
     <artifactId>approx-smote</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.2</version>
   </dependency>
 </dependencies>
 <repositories>
   <!-- list of other repositories -->
   <repository>
     <id>SparkPackagesRepo</id>
-    <url>http://dl.bintray.com/spark-packages/maven</url>
+    <url>https://repos.spark-packages.org</url>
   </repository>
 </repositories>
 ```

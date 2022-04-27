@@ -112,6 +112,8 @@ class ASMOTE @Since("2.4.5") (
       .map(r => (r.getAs[Double](0), r.getAs[Long](1)))
       .apply(0)
 
+    val cols = ds.columns.map(c => col(c))
+
     val minorityDS = ds.filter(col($(labelCol)) === minorityLabel)
 
     val scalerModel = new MinMaxScaler()
@@ -124,6 +126,7 @@ class ASMOTE @Since("2.4.5") (
       .transform(minorityDS)
       .drop($(featuresCol))
       .withColumnRenamed("fs", $(featuresCol))
+      .select(cols: _*)
       .cache
       .toDF
 
@@ -134,7 +137,7 @@ class ASMOTE @Since("2.4.5") (
 
     val tts = if($(topTreeSize) > 0) $(topTreeSize) else ((normMinorityDF.count/500.0).ceil.toInt)
 
-    val knnDF = new KNN()
+    val knnModel = new KNN()
       .setK($(k))
       .setMaxDistance($(maxDistance))
       .setBufferSize($(bufferSize))
@@ -143,31 +146,37 @@ class ASMOTE @Since("2.4.5") (
       .setSubTreeLeafSize($(subTreeLeafSize))
       .setBufferSizeSampleSizes($(bufferSizeSampleSizes))
       .setBalanceThreshold($(balanceThreshold))
-      .setAuxCols(Array($(featuresCol)))
+      .setAuxCols(normMinorityDF.columns)
       .setSeed(rnd.nextLong)
       .fit(normMinorityDF)
-      .transform(normMinorityDF)
+    val knnDF = knnModel.transform(normMinorityDF)
 
     normMinorityDF.unpersist
 
     val synthSamples = knnDF.rdd.flatMap {
-      case Row(label: Double, currentF: Vector, neighborsIter: Iterable[_]) =>
-      val neighbors = neighborsIter.asInstanceOf[Iterable[Row]].toList
-      (0 to (creationFactor - 1)).map{ case(_) =>
-        val randomIndex = rnd.nextInt(neighbors.size)
-        val neighbour = neighbors(randomIndex).get(0).asInstanceOf[Vector].asBreeze
-        val currentFBreeze = currentF.asBreeze
-        val difference = (neighbour - currentFBreeze) * rnd.nextDouble
-        val synthSample = Vectors.fromBreeze(currentFBreeze + difference)
-        Row.fromSeq(Seq(label, synthSample))
-      }
+      case r: Row =>
+        val currentF = r.getAs[Vector]($(featuresCol))
+        val neighbors = r.getAs[Iterable[Row]](knnModel.getNeighborsCol).toList
+        (0 to (creationFactor - 1)).map{ case(_) =>
+          val randomIndex = rnd.nextInt(neighbors.size)
+          val neighbor = neighbors(randomIndex)
+          val neighborF = neighbor.getAs[Vector]($(featuresCol)).asBreeze
+          val currentFBreeze = currentF.asBreeze
+          val difference = (neighborF - currentFBreeze) * rnd.nextDouble
+          val synthSample = Vectors.fromBreeze(currentFBreeze + difference)
+
+          val featuresIdx = neighbor.fieldIndex($(featuresCol))
+          val neighborSq = neighbor.toSeq
+
+          Row.fromSeq(replaceElement(neighborSq, featuresIdx, synthSample))
+        }
     }.cache
 
     val sampleFrac = frac / creationFactor
     val synthSamplesDF = session
-      .createDataFrame(synthSamples, ds.select($(labelCol), $(featuresCol)).schema)
+      .createDataFrame(synthSamples, ds.schema)
       .sample(false, sampleFrac, rnd.nextLong)
-    ds.select($(labelCol), $(featuresCol)).toDF.union(denormalize(synthSamplesDF, scalerModel))
+    ds.toDF.union(denormalize(synthSamplesDF, scalerModel))
   }
 
   /**
@@ -232,7 +241,19 @@ class ASMOTE @Since("2.4.5") (
     // Denormalize the features column and overwrite it.
     df.withColumn($(featuresCol), transformer(col($(featuresCol))))
   }
-  
+
+  /**
+    * Replaces an element present in a certain position of a sequence.
+    *
+    * @param seq Sequence of elements.
+    * @param index Position of the value to replace.
+    * @param newValue New value.
+    * @return The new sequence.
+    */
+  private def replaceElement(seq: Seq[Any], index: Int, newValue: Any): Seq[Any] = {
+    val (part0, part1) = seq.splitAt(index)
+    part0 ++ Seq(newValue) ++ part1.tail
+  }
 
 }
 
